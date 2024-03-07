@@ -3,17 +3,32 @@
 const user = require("../models/user.model");
 const uploadOnCloudinary = require("../utils/cloudinary");
 
-// get user details from frontend according to ours models
-// then validation - not empty
-// check if user already exist : username & email
-// check for images , check for avatar
-// upload them to cloudinary
-// create user object : to create no sql data in db
-// remove password and refresh toekn field from response
-// check for user creation
-// if user created return res or send error
+const generatetokens = async (dataid) => {
+  try {
+    const data = await user.findById(dataid);
+    const accessToken = data.generateAccessToken();
+    const refreshToken = data.generateRefreshToken();
+
+    data.refreshToken = refreshToken;
+    await data.save({ validateBeforeSave: false });
+
+    return { accessToken, refreshToken };
+  } catch (error) {
+    throw new error();
+  }
+};
 
 const registeruser = async (req, res) => {
+  // get user details from frontend according to ours models
+  // then validation - not empty
+  // check if user already exist : username & email
+  // check for images , check for avatar
+  // upload them to cloudinary
+  // create user object : to create no sql data in db
+  // remove password and refresh toekn field from response
+  // check for user creation
+  // if user created return res or send error
+
   const { username, email, fullName, password } = req.body;
   //console.log("username", username);
 
@@ -74,4 +89,52 @@ const registeruser = async (req, res) => {
   });
 };
 
-module.exports = registeruser;
+const loginuser = async (req, res) => {
+  // req body -> data
+  // username or email
+  //find the user
+  //password check
+  //access and referesh token
+  //send cookie
+
+  const { email, username, password } = req.body;
+
+  console.log("here is username or email", email, username);
+
+  if (!(username || email))
+    res.status(400).send("username or email is required");
+
+  const data = await user.findOne({
+    $or: [{ username }, { email }],
+  });
+
+  if (!data)
+    res.status(404).send("User Does Not Exist Please Register First !!");
+
+  const checkpassword = await data.isPasswordCorrect(password);
+
+  if (!checkpassword) res.status(401).send("Invalid Password");
+
+  const { accessToken, refreshToken } = await generatetokens(data._id);
+
+  const loggedInUser = await user
+    .findById(data._id)
+    .select("-password -refreshToken");
+
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+  return res
+    .status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json({
+      data: loggedInUser,
+      accessToken,
+      refreshToken,
+      message: "User Logged In Sucessfully",
+    });
+};
+
+module.exports = { registeruser, loginuser };
