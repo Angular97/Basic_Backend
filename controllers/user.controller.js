@@ -123,9 +123,8 @@ const loginuser = async (req, res) => {
 
   const options = {
     httpOnly: true,
-    secure: true,
   };
-  return res
+  res
     .status(200)
     .cookie("accessToken", accessToken, options)
     .cookie("refreshToken", refreshToken, options)
@@ -137,4 +136,35 @@ const loginuser = async (req, res) => {
     });
 };
 
-module.exports = { registeruser, loginuser };
+const logoutuser = async (req, res) => {
+  // since for logout need data for a user to logout but in this logout user could not send anything
+  // so in what basic we logout the user ,  idea is we create one auth middleware so when user login the profile
+  // refersh & access token generate with the help of these token we can access the data & compare to our db and then
+  // logout the user also delete the refresh token because session is done
+
+  const logoutdata = await user.findByIdAndUpdate(
+    req.data._id,
+    {
+      $set: {
+        refreshToken: "", // this removes the field from documen
+      },
+    },
+    {
+      new: true, // send response with the updated data from db i.e we see the data with refreshtoken undefined
+    }
+  );
+
+  const options = {
+    httpOnly: true,
+  };
+
+  return res
+    .status(200)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    .json({
+      message: "User Logout Successfully",
+    });
+};
+
+module.exports = { registeruser, loginuser, logoutuser };
