@@ -14,16 +14,16 @@ const verifyToken = async (req, res, next) => {
 
     const decodetoken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
 
-    const data = user
+    const data = await user
       .findById(decodetoken?._id)
       .select("-password -refreshToken");
 
     if (!data) res.status(401).send("Invalid Token Access");
 
-    console.log(data);
+    //console.log(data);
 
     req.data = data; // adding new object req.data what ever you want to give name
-
+    //console.log(req.data);
     next();
   } catch (error) {
     res.status(401).send(error?.message || "Invalid Token Access Catch");

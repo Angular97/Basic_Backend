@@ -142,11 +142,11 @@ const logoutuser = async (req, res) => {
   // refersh & access token generate with the help of these token we can access the data & compare to our db and then
   // logout the user also delete the refresh token because session is done
 
-  const logoutdata = await user.findByIdAndUpdate(
+  await user.findByIdAndUpdate(
     req.data._id,
     {
-      $set: {
-        refreshToken: "", // this removes the field from documen
+      $unset: {
+        refreshToken: 1, // this removes the field from documen
       },
     },
     {
@@ -167,4 +167,41 @@ const logoutuser = async (req, res) => {
     });
 };
 
-module.exports = { registeruser, loginuser, logoutuser };
+const getCurrentUser = async (req, res) => {
+  const currentuser = req.data;
+  // returning the current user
+  return res.status(200).json({
+    data: currentuser,
+    message: "Current user fetched successfully.",
+  });
+};
+
+const updatepassword = async (req, res) => {
+  const { oldpassword, newpassword } = req.body;
+
+  console.log(req.data._id);
+
+  const data = await user.findById(req.data._id);
+  //console.log(data);
+
+  if (!data) res.status(404).send("User Not Found !!");
+
+  const checkedpassword = await data.isPasswordCorrect(oldpassword);
+
+  if (!checkedpassword) res.status(400).send("Password is Incorrect !!");
+
+  data.password = newpassword;
+  await data.save({ validateBeforeSave: false });
+
+  return res.status(200).json({
+    message: "Password Change Successfully !!",
+  });
+};
+
+module.exports = {
+  registeruser,
+  loginuser,
+  logoutuser,
+  getCurrentUser,
+  updatepassword,
+};

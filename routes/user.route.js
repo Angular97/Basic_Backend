@@ -3,6 +3,8 @@ const {
   registeruser,
   loginuser,
   logoutuser,
+  updatepassword,
+  getCurrentUser,
 } = require("../controllers/user.controller");
 const upload = require("../middlewares/multer.middleware");
 const verifyToken = require("../middlewares/auth.middleware");
@@ -33,5 +35,8 @@ router.route("/login").post(loginuser);
 
 // Secure Routes
 router.route("/logout").post(verifyToken, logoutuser);
+
+router.route("/current-user").get(verifyToken, getCurrentUser);
+router.route("/change-password").patch(verifyToken, updatepassword);
 
 module.exports = router;
